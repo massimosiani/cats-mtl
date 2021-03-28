@@ -5,6 +5,29 @@ import cats.{Comonad, Functor}
 /**
  * The `ComonadStore[F, S]` stores a function together with an initial value, and lets
  * access and modify the initial value using `pos: S` and `seek(s: S): F[A]`
+ *
+ * `ComonadStore` has two external laws
+ * {{{
+ * def posThenSeekDoesNothing[A](fa: F[A]): IsEq[F[A]] = {
+ *   seek[A](pos) <-> fa
+ * }
+ * def seekThenPosDoesNothing[A](fs: F[S], s: S): IsEq[F[S]] = {
+ *   seek[A](s).coflatMap(_ => pos) <-> fs
+ * }
+ * def seekThenSeekSeeksOnce[A](s1: S, s2: S): IsEq[F[A]] = {
+ *   seek[A](s1).map(_ => seek[A](s2).extract) <-> seek(s2)
+ * }
+ * }}}
+ *
+ * `ComonadStore` has two internal laws
+ * {{{
+ * def posIsCoflatMapThenPos[A, B](fa: F[A], f: F[A] => B): IsEq[S] = {
+ *   pos <-> coflatMap(fa)(f).coflatMap(_ => pos).extract
+ * }
+ * def extractIsPeek[A](fa: F[A]): IsEq[A] = {
+ *   extract(fa) <-> peek(pos)
+ * }
+ * }}}
  */
 trait ComonadStore[F[_], S] extends Serializable {
   val comonad: Comonad[F]
